@@ -1,57 +1,51 @@
 #include <iostream>
 #include <cstring>
 #include <stdexcept>
-#include <string>
+#include <istream>
 
-template <typename T>
-class String{
-    T *mData = nullptr;
-  void init(const T *newData){
-    try{
-      int new_len = newData ? std::char_traits<T>::length(newData) : 0 ;
-      mData = new T[new_len+1]();
-      std::memcpy(mData, newData, new_len);
-      mData[std::char_traits<T>::length(mData)] = '\0';
-    } catch(const std::bad_alloc &msg){
-      std::cerr << "Allocation failed: " << msg.what() << std::endl;
-      throw;
-    } catch (const std::exception &e){
-      std::cerr << "Exception: " << e.what() << std::endl;
-      throw;
-    }
-    }
-
-  void creatOne(const String &s){
-    // int length = mData ? length: 0;
-    int len = mData ? std::char_traits<T>::length(mData) : 0 ;
-    int new_len = s.mData ? std::char_traits<T>::length(s.mData) : 0;
-    try{
-      T *newData = new T[new_len + len +1]();
-      std::memcpy(newData, mData, len);
-      std::memcpy(newData + len ,s.mData,new_len);
-      //newData[new_length+length+1] = '\0';
-      delete[] mData;
-      mData = newData;
-    } catch(const std::bad_alloc &msg){
-      std::cerr << "Allocation failed: " << msg.what() << std::endl;
-      throw;
-    } catch (const std::exception &e){
-      std::cerr << "Exception: " << e.what() << std::endl;
-      throw;
-    }
-    }
-
-  void creatTwo(T c){
-    // int length = mData ? length: 0;
-    int len= mData ? std::char_traits<T>::length(mData) : 0 ;
+template <typename charT>
+class String {
+  charT *mData = nullptr;
+  void init(const charT *newData) {
     try {
-      T *newData = new T[len+2]();
-      std::memcpy(newData, mData, len);
-      newData[len] = c;
-      newData[len+1] = '\0';
+      int new_len = newData ? static_cast<int>(std::char_traits<charT>::length(newData)) : 0;
+      mData = new charT[new_len + 1]();
+      std::memcpy(mData, newData, new_len * sizeof(charT));
+      mData[new_len] = '\0';
+    } catch (const std::bad_alloc &msg) {
+      std::cerr << "Allocation failed: " << msg.what() << std::endl;
+      throw;
+    } catch (const std::exception &e) {
+      std::cerr << "Exception: " << e.what() << std::endl;
+      throw;
+    }
+  }
+
+  void createOne(const String &s) {
+    int new_len = s.mData ? static_cast<int>(std::char_traits<charT>::length(s.mData)) : 0;
+    try {
+      charT *newData = new charT[new_len + len() + 1]();
+      std::memcpy(newData, mData, len() * sizeof(charT));
+      std::memcpy(newData + len(), s.mData, new_len * sizeof(charT));
       delete[] mData;
       mData = newData;
-      //return *this;
+    } catch (const std::bad_alloc &msg) {
+      std::cerr << "Allocation failed: " << msg.what() << std::endl;
+      throw;
+    } catch (const std::exception &e) {
+      std::cerr << "Exception: " << e.what() << std::endl;
+      throw;
+    }
+  }
+
+  void createTwo(charT c){
+    try {
+      charT *newData = new charT[len()+2]();
+      std::memcpy(newData, mData, len()*sizeof(charT));
+      newData[len()] = c;
+      newData[len()+1] = '\0';
+      delete[] mData;
+      mData = newData;
     } catch(const std::bad_alloc &msg){
       std::cerr << "Allocation failed: " << msg.what() << std::endl;
       throw;
@@ -60,24 +54,20 @@ class String{
       throw;
     } 
     }
-
  public:
     String():mData(nullptr){}
-    String(const T *s){
+    String(const charT *s){
         init(s);
     }
-    // String (const T &s){
-    //     init(s);
-    // }
     String(const String &s){
         init(s.mData);
     }
     String& operator+=(const String &s){
-        creatOne(s);
+        createOne(s);
         return *this;
     }
-    String& operator+=(T c){
-        creatTwo(c);
+    String& operator+=(charT c){
+        createTwo(c);
         return *this;
     }
     String& operator = (const String& s){
@@ -93,89 +83,86 @@ class String{
         String tmp(s1);
         return tmp += s2;
     }
-    friend String operator+(const T* c, const String & s){
+    friend String operator+(const charT* c, const String & s){
         String tmp;
         tmp.init(c);
         return tmp+=s;
     }
     bool operator > (const String &s) const{
-      int len = mData ? std::char_traits<T>::length(mData) : 0 ;
-        return (len > std::char_traits<T>::length(s.mData));
+        return (len() > static_cast<int>(std::char_traits<charT>::length(s.mData)));
     }
     bool operator <= (const String &s)const {
-      int len = mData ? std::char_traits<T>::length(mData) : 0 ;
-        return (len <= std::char_traits<T>::length(s.mData));
+        return (len() <= static_cast<int>(std::char_traits<charT>::length(s.mData)));
     }
     bool operator!() const{
-      int len = mData ? std::char_traits<T>::length(mData) : 0 ;
-        return (mData != nullptr || len != 0);
+        return (mData != nullptr || len() != 0);
     }
-    T& operator[](int i){
-      int len = mData ? std::char_traits<T>::length(mData) : 0 ;
+    charT& operator[](int i){
         if(mData == nullptr) throw "mData nullptr!!";
-        if(i<0 || i >= len){
+        if(i<0 || i >= len()){
             throw "index out of bounds!!";
         } else {
             return mData[i];
         }
     }
-    friend std::ostream& operator<<(std::ostream& os, const String& str){
-        // if(mData == nullptr) throw "mData nullptr";
-        try{
-            os << str.mData;
-            return os;
-        } catch (const std::exception &e){
-            std::cerr<< "Exception: " << e.what() << std::endl;
-            throw;
-        }
+
+  friend std::basic_ostream<charT>& operator<<(std::basic_ostream<charT>& os,
+                                               const String& str) {
+    try {
+      os << str.mData;
+      return os;
+    } catch (const std::exception& e) {
+      std::cerr << "Exception: " << e.what() << std::endl;
+      throw;
     }
-    friend std::istream& operator>>(std::istream& is, String& str){
-        try{
-            T buffer[1000];
-            is >> buffer;
-            str = buffer;
-            return is;
-        } catch (const std::exception &e){
-            std::cerr << "Exception: " << e.what() << std::endl;
-            throw;
-        }
+  }
+  friend std::basic_istream<charT>& operator>>(std::basic_istream<charT>& is,
+                                               String& str) {
+    try {
+      charT buffer[1000];
+      is >> buffer;
+      str = buffer;
+      return is;
+    } catch (const std::exception& e) {
+      std::cerr << "Exception: " << e.what() << std::endl;
+      throw;
+    }
+  }
+
+    int len() const {
+         return mData ? static_cast<int>(std::char_traits<charT>::length(mData)) : 0;
     }
     void print() const
     {
       if (mData == nullptr) {throw "mData nullptr";}
-      std::cout << mData << std::endl;
+      std::wcout << mData << std::endl;
     }
-    T* convert() const {}
+    charT* convert() const {}
     ~String(){
         delete[] mData;
     }
     
 };
 
-template <typename T>
-void f(T* str){}
+template <typename charT>
+void f(charT* str){}
 int main(int argc, char **argv){
-// String<wchar_t> s1, s2;
-// s1 += s2;
-// s1 += L'a'; 
-// s1[0] = L'b'; 
-// s1 += L"Hello"; 
-// s2 = L"Hello" + s1; 
-String<char> s1,s2;
-s1 += s2;
-s1 += 'a';
-s1[0] = 'b';
-s1 += "Hello";
-s2 = "Hello" + s1    ;    
-s2.print();
-f(s2.convert());
-if (s2 > s1) {
-    std::cout << s1 << std::endl; 
-} else if (s1 <= s2) {
-    std::cout << s2 << std::endl; 
-}
+  String<wchar_t> s1, s2;
+  s1 += s2;
+  s1 += L'a'; 
+  s1[0] = L'b'; 
+  s1 += L"Hello"; 
+  s2 = L"Hello" + s1; 
+  s1.print();
+  s2.print();
+  f(s2.convert());
+  if (s2 > s1) {
+    std::wcout << s1 << std::endl; 
+  } else if (s1 <= s2) {
+    std::wcout << s2 << std::endl; 
+  }
 
-if (!s1)
-    std::cin >> s1; 
+  if (!s1)
+    std::wcin >> s1; 
 
 }    
